@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="12"/>
+      <feOffset dx="0" dy="6" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.4"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <g filter="url(#shadow)" opacity="0.95">
+    <!-- Left hammer - claw hammer -->
+    <g transform="translate(156, 256)">
+      <!-- Large hammer head with claw -->
+      <rect x="-60" y="-220" width="120" height="100" rx="10" fill="white" opacity="0.95"/>
+      
+      <!-- Claw side - curved notch -->
+      <path d="M -60 -150 L -80 -130 L -80 -100 L -60 -120 Z" fill="white" opacity="0.95"/>
+      <path d="M 60 -150 L 80 -130 L 80 -100 L 60 -120 Z" fill="white" opacity="0.95"/>
+      
+      <!-- Striking face - slightly raised -->
+      <rect x="-60" y="-220" width="120" height="45" rx="10" fill="white" opacity="1"/>
+      
+      <!-- Handle -->
+      <rect x="-18" y="-130" width="36" height="300" rx="18" fill="white" opacity="0.85"/>
+      
+      <!-- Handle end -->
+      <ellipse cx="0" cy="165" rx="22" ry="14" fill="white" opacity="0.75"/>
+    </g>
+    
+    <!-- Right hammer - sledge hammer style -->
+    <g transform="translate(356, 256)">
+      <!-- Large square/rectangular head -->
+      <rect x="-70" y="-230" width="140" height="110" rx="8" fill="white" opacity="0.9"/>
+      
+      <!-- Top striking face -->
+      <rect x="-70" y="-230" width="140" height="50" rx="8" fill="white" opacity="1"/>
+      
+      <!-- Side bevels for depth -->
+      <polygon points="-70,-230 -85,-210 -85,-130 -70,-120" fill="white" opacity="0.85"/>
+      <polygon points="70,-230 85,-210 85,-130 70,-120" fill="white" opacity="0.85"/>
+      
+      <!-- Handle -->
+      <rect x="-18" y="-130" width="36" height="300" rx="18" fill="white" opacity="0.8"/>
+      
+      <!-- Handle end -->
+      <ellipse cx="0" cy="165" rx="22" ry="14" fill="white" opacity="0.7"/>
+    </g>
+  </g>
+</svg>

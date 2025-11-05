@@ -1,0 +1,14 @@
+tmp/
+
+.build/
+DerivedData/
+.DS_Store
+
+# Xcode project workspace caches/state
+xcuserdata/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+
+# Environment configuration (local only)
+.env
+.env.local
