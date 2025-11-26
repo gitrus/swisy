@@ -44,7 +44,8 @@ final class ToolRegistry {
     private(set) var tools: [any Tool] = [
         JWTDecoderTool(),
         Base64DecoderTool(),
-        JSONFormatterTool()
+        JSONFormatterTool(),
+        TextDiffTool()
     ]
 
     var categories: [ToolCategory] {

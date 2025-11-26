@@ -142,7 +142,7 @@ struct HighlightedTextView: NSViewRepresentable {
         {
             let nsRange = NSRange(range, in: content)
             text.addAttribute(
-                .backgroundColor, value: NSColor.yellow.withAlphaComponent(0.5), range: nsRange)
+                .backgroundColor, value: AppColors.searchHighlight, range: nsRange)
             searchRange = range.upperBound..<content.endIndex
         }
     }
