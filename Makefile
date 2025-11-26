@@ -11,7 +11,16 @@ help:
 build:
 	swift build
 
-run: build
+run: bundle
+	open Swisy.app
+
+bundle: build
+	@mkdir -p Swisy.app/Contents/MacOS Swisy.app/Contents/Resources
+	@cp .build/debug/swisy Swisy.app/Contents/MacOS/Swisy
+	@cp AppIcon.icns Swisy.app/Contents/Resources/AppIcon.icns
+	@cp Info.plist Swisy.app/Contents/Info.plist
+
+run-debug: build
 	swift run
 
 clean:

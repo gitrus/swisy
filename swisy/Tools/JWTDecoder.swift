@@ -5,8 +5,10 @@
  Pattern: Tool struct → Models → Pure functions → Views
  */
 
-import SwiftUI
+import AppKit
 import Foundation
+import Highlight
+import SwiftUI
 
 // MARK: - Tool Registration
 struct JWTDecoderTool: Tool {
@@ -30,8 +32,10 @@ struct JWTDecoderTool: Tool {
 
 // MARK: - Models
 struct DecodedJWT {
-    let header: String
-    let payload: String
+    let header: NSAttributedString
+    let headerRaw: String
+    let payload: NSAttributedString
+    let payloadRaw: String
     let signature: String
     let isExpired: Bool
     let expiresAt: Date?
@@ -71,17 +75,21 @@ enum JWTDecoder {
 
         // Decode header
         guard let headerData = base64URLDecode(parts[0]),
-              let headerJSON = try? JSONSerialization.jsonObject(with: headerData),
-              let prettyHeader = try? JSONSerialization.data(withJSONObject: headerJSON, options: [.prettyPrinted, .sortedKeys]),
-              let headerString = String(data: prettyHeader, encoding: .utf8) else {
+            let headerJSON = try? JSONSerialization.jsonObject(with: headerData),
+            let prettyHeader = try? JSONSerialization.data(
+                withJSONObject: headerJSON, options: [.prettyPrinted, .sortedKeys]),
+            let headerString = String(data: prettyHeader, encoding: .utf8)
+        else {
             return .failure(JWTError.invalidBase64(part: "header"))
         }
 
         // Decode payload
         guard let payloadData = base64URLDecode(parts[1]),
-              let payloadJSON = try? JSONSerialization.jsonObject(with: payloadData),
-              let prettyPayload = try? JSONSerialization.data(withJSONObject: payloadJSON, options: [.prettyPrinted, .sortedKeys]),
-              let payloadString = String(data: prettyPayload, encoding: .utf8) else {
+            let payloadJSON = try? JSONSerialization.jsonObject(with: payloadData),
+            let prettyPayload = try? JSONSerialization.data(
+                withJSONObject: payloadJSON, options: [.prettyPrinted, .sortedKeys]),
+            let payloadString = String(data: prettyPayload, encoding: .utf8)
+        else {
             return .failure(JWTError.invalidBase64(part: "payload"))
         }
 
@@ -90,14 +98,17 @@ enum JWTDecoder {
         var isExpired = false
 
         if let payload = payloadJSON as? [String: Any],
-           let exp = payload["exp"] as? TimeInterval {
+            let exp = payload["exp"] as? TimeInterval
+        {
             expiresAt = Date(timeIntervalSince1970: exp)
             isExpired = expiresAt ?? Date.distantFuture < Date()
         }
 
         let jwt = DecodedJWT(
-            header: headerString,
-            payload: payloadString,
+            header: highlightJSON(headerString),
+            headerRaw: headerString,
+            payload: highlightJSON(payloadString),
+            payloadRaw: payloadString,
             signature: parts[2],
             isExpired: isExpired,
             expiresAt: expiresAt
@@ -106,8 +117,15 @@ enum JWTDecoder {
         return .success(jwt)
     }
 
+    private static func highlightJSON(_ string: String) -> NSAttributedString {
+        let attributed = NSMutableAttributedString(string: string)
+        JsonSyntaxHighlightProvider.shared.highlight(attributed, as: .json)
+        return attributed
+    }
+
     private static func base64URLDecode(_ string: String) -> Data? {
-        var base64 = string
+        var base64 =
+            string
             .replacingOccurrences(of: "-", with: "+")
             .replacingOccurrences(of: "_", with: "/")
 
@@ -125,7 +143,6 @@ enum JWTDecoder {
 struct JWTDecoderView: View {
     @ObservedObject private var state = ToolStateRegistry.shared.jwt
     @State private var result: Result<DecodedJWT, any Error>?
-    @FocusState private var inputFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -134,23 +151,23 @@ struct JWTDecoderView: View {
                 HStack {
                     Text("Encoded JWT")
                         .font(.headline)
+
                     Spacer()
+
+                    CharacterCountView(text: state.input)
+
                     Button(action: pasteFromClipboard) {
                         Label("Paste", systemImage: "doc.on.clipboard")
                     }
                     .keyboardShortcut("v", modifiers: [.command, .shift])
                 }
 
-                TextEditor(text: $state.input)
-                    .font(.system(.body, design: .monospaced))
+                ResizableSmartTextEditor(text: $state.input, maxLineLength: 120)
                     .frame(height: 120)
-                    .scrollContentBackground(.hidden)
-                    .background(Color(nsColor: .textBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                     )
-                    .focused($inputFocused)
                     .onChange(of: state.input) { _, newValue in
                         decode(newValue)
                     }
@@ -164,21 +181,23 @@ struct JWTDecoderView: View {
                 VStack(spacing: 16) {
                     switch result {
                     case .success(let jwt):
-                        DecodedSection(
+                        DecodedJSONSection(
                             title: "Header",
-                            content: jwt.header,
+                            attributed: jwt.header,
+                            raw: jwt.headerRaw,
                             color: .red
                         )
 
-                        DecodedSection(
+                        DecodedJSONSection(
                             title: "Payload",
-                            content: jwt.payload,
+                            attributed: jwt.payload,
+                            raw: jwt.payloadRaw,
                             color: .purple,
                             warning: jwt.isExpired ? "Token expired" : nil,
                             expiresAt: jwt.expiresAt
                         )
 
-                        DecodedSection(
+                        DecodedTextSection(
                             title: "Signature",
                             content: jwt.signature,
                             color: .blue
@@ -198,9 +217,6 @@ struct JWTDecoderView: View {
         .task {
             // Decode persisted input when view appears
             decode(state.input)
-        }
-        .onAppear {
-            inputFocused = true
         }
     }
 
@@ -222,40 +238,41 @@ struct JWTDecoderView: View {
 }
 
 // MARK: - Supporting Views
-struct DecodedSection: View {
+
+struct DecodedJSONSection: View {
     let title: String
-    let content: String
-    let color: Color
+    let attributed: NSAttributedString
+    let raw: String
+    let color: SwiftUI.Color
     var warning: String? = nil
     var expiresAt: Date? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Label(title, systemImage: "circle.fill")
-                    .font(.headline)
-                    .foregroundStyle(color)
+            sectionHeader(
+                title: title, color: color, copyText: raw, warning: warning, expiresAt: expiresAt)
 
-                Spacer()
+            HighlightedTextView(attributedString: attributed, searchText: "")
+                .frame(
+                    height: max(80, CGFloat(raw.components(separatedBy: .newlines).count * 18 + 24))
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(color.opacity(0.3), lineWidth: 1)
+                )
+        }
+    }
+}
 
-                if let warning {
-                    Text(warning)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
+struct DecodedTextSection: View {
+    let title: String
+    let content: String
+    let color: SwiftUI.Color
 
-                if let exp = expiresAt {
-                    Text("Expires: \(exp, style: .relative)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Button(action: { ClipboardService.shared.copy(content) }) {
-                    Label("Copy", systemImage: "doc.on.doc")
-                        .labelStyle(.iconOnly)
-                }
-                .buttonStyle(.borderless)
-            }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionHeader(title: title, color: color, copyText: content)
 
             Text(content)
                 .font(.system(.body, design: .monospaced))
@@ -269,6 +286,41 @@ struct DecodedSection: View {
                         .stroke(color.opacity(0.3), lineWidth: 1)
                 )
         }
+    }
+}
+
+@ViewBuilder
+private func sectionHeader(
+    title: String,
+    color: SwiftUI.Color,
+    copyText: String,
+    warning: String? = nil,
+    expiresAt: Date? = nil
+) -> some View {
+    HStack {
+        Label(title, systemImage: "circle.fill")
+            .font(.headline)
+            .foregroundStyle(color)
+
+        Spacer()
+
+        if let warning {
+            Text(warning)
+                .font(.caption)
+                .foregroundStyle(.orange)
+        }
+
+        if let exp = expiresAt {
+            Text("Expires: \(exp, style: .relative)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+
+        Button(action: { ClipboardService.shared.copy(copyText) }) {
+            Label("Copy", systemImage: "doc.on.doc")
+                .labelStyle(.iconOnly)
+        }
+        .buttonStyle(.borderless)
     }
 }
 

@@ -1,56 +1,54 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1056 992">
   <defs>
-    <filter id="shadow">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="12"/>
-      <feOffset dx="0" dy="6" result="offsetblur"/>
-      <feComponentTransfer>
-        <feFuncA type="linear" slope="0.4"/>
-      </feComponentTransfer>
-      <feMerge>
-        <feMergeNode/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <!-- Background gradient -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4f4f4"/>
+      <stop offset="1" stop-color="#888888"/>
+    </linearGradient>
+
+    <!-- Pink handle -->
+    <linearGradient id="pinkHandle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#B16D7A"/>
+      <stop offset="1" stop-color="#E08C9A"/>
+    </linearGradient>
+
+    <!-- Pink block -->
+    <linearGradient id="pinkBlock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E7909F"/>
+      <stop offset="1" stop-color="#C87585"/>
+    </linearGradient>
+
+    <!-- Teal handle -->
+    <linearGradient id="tealHandle" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3E9E9E"/>
+      <stop offset="1" stop-color="#5EBBB6"/>
+    </linearGradient>
+
+    <!-- Teal block -->
+    <linearGradient id="tealBlock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#63C3BE"/>
+      <stop offset="1" stop-color="#409E99"/>
+    </linearGradient>
   </defs>
-  
-  <g filter="url(#shadow)" opacity="0.95">
-    <!-- Left hammer - claw hammer -->
-    <g transform="translate(156, 256)">
-      <!-- Large hammer head with claw -->
-      <rect x="-60" y="-220" width="120" height="100" rx="10" fill="white" opacity="0.95"/>
-      
-      <!-- Claw side - curved notch -->
-      <path d="M -60 -150 L -80 -130 L -80 -100 L -60 -120 Z" fill="white" opacity="0.95"/>
-      <path d="M 60 -150 L 80 -130 L 80 -100 L 60 -120 Z" fill="white" opacity="0.95"/>
-      
-      <!-- Striking face - slightly raised -->
-      <rect x="-60" y="-220" width="120" height="45" rx="10" fill="white" opacity="1"/>
-      
-      <!-- Handle -->
-      <rect x="-18" y="-130" width="36" height="300" rx="18" fill="white" opacity="0.85"/>
-      
-      <!-- Handle end -->
-      <ellipse cx="0" cy="165" rx="22" ry="14" fill="white" opacity="0.75"/>
-    </g>
-    
-    <!-- Right hammer - sledge hammer style -->
-    <g transform="translate(356, 256)">
-      <!-- Large square/rectangular head -->
-      <rect x="-70" y="-230" width="140" height="110" rx="8" fill="white" opacity="0.9"/>
-      
-      <!-- Top striking face -->
-      <rect x="-70" y="-230" width="140" height="50" rx="8" fill="white" opacity="1"/>
-      
-      <!-- Side bevels for depth -->
-      <polygon points="-70,-230 -85,-210 -85,-130 -70,-120" fill="white" opacity="0.85"/>
-      <polygon points="70,-230 85,-210 85,-130 70,-120" fill="white" opacity="0.85"/>
-      
-      <!-- Handle -->
-      <rect x="-18" y="-130" width="36" height="300" rx="18" fill="white" opacity="0.8"/>
-      
-      <!-- Handle end -->
-      <ellipse cx="0" cy="165" rx="22" ry="14" fill="white" opacity="0.7"/>
-    </g>
-  </g>
+
+  <!-- Background -->
+  <rect x="0" y="0" width="1056" height="992" rx="120" ry="120"
+        fill="url(#bgGrad)"/>
+
+  <!-- Left (pink) handle -->
+  <rect x="269" y="150" width="91" height="420" rx="45" ry="45"
+        fill="url(#pinkHandle)"/>
+
+  <!-- Left (pink) block -->
+  <rect x="142" y="550" width="341" height="250" rx="70" ry="70"
+        fill="url(#pinkBlock)"/>
+
+  <!-- Right (teal) handle -->
+  <rect x="700" y="151" width="94" height="420" rx="47" ry="47"
+        fill="url(#tealHandle)"/>
+
+  <!-- Right (teal) block -->
+  <rect x="576" y="550" width="341" height="250" rx="70" ry="70"
+        fill="url(#tealBlock)"/>
 </svg>

@@ -1,64 +1,59 @@
 /*
- PlainTextEditor.swift
+ SmartTextEditor.swift
 
- A plain text editor wrapper around NSTextView with smart quotes/dashes disabled.
- Perfect for code, JSON, and other technical text where automatic substitutions break syntax.
+ Enhanced text editor with intelligent wrapping behavior.
+
+ Features:
+ - Natural text wrapping within available width
+ - Hard limit at 120 characters (configurable)
+ - Monospaced font
+ - Character/line count support via CharacterCountView
+ - macOS native behavior
+
+ Usage:
+ ```swift
+ SmartTextEditor(text: $input)
+ SmartTextEditor(text: $input, maxLineLength: 100)
+ ```
  */
 
 import SwiftUI
 import AppKit
 
-/// Plain text editor with automatic text substitutions disabled
-///
-/// Features:
-/// - No smart quotes (always uses straight quotes: ")
-/// - No smart dashes (always uses regular dashes: -)
-/// - No automatic text replacement
-/// - Monospaced font by default
-/// - Proper text binding with SwiftUI
-///
-/// Usage:
-/// ```swift
-/// @State private var code = ""
-///
-/// PlainTextEditor(text: $code)
-///     .frame(height: 200)
-/// ```
-struct PlainTextEditor: NSViewRepresentable {
+struct SmartTextEditor: NSViewRepresentable {
     @Binding var text: String
-    var font: NSFont = .monospacedSystemFont(ofSize: 13, weight: .regular)
     var maxLineLength: Int = 120  // Hard wrap at this character count
+    var font: NSFont = .monospacedSystemFont(ofSize: 13, weight: .regular)
     var availableWidth: CGFloat = 0  // Track container width for resize updates
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
         let textView = scrollView.documentView as! NSTextView
 
-        // Appearance
-        textView.isEditable = true
-        textView.isSelectable = true
-        textView.backgroundColor = .textBackgroundColor
-        textView.textColor = .textColor
+        // Basic setup
+        textView.delegate = context.coordinator
         textView.font = font
-        textView.textContainerInset = NSSize(width: 12, height: 12)
-
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
         textView.isAutomaticTextReplacementEnabled = false
         textView.isAutomaticSpellingCorrectionEnabled = false
+        textView.backgroundColor = .textBackgroundColor
+        textView.textColor = .textColor
+        textView.textContainerInset = NSSize(width: 8, height: 8)
 
-        textView.delegate = context.coordinator
-
-        // Configure text container with maximum line length
+        // Configure text container
         if let textContainer = textView.textContainer {
             // Calculate maximum width for the character limit
             let charWidth = font.advancement(forGlyph: font.glyph(withName: "m")).width
             let maxWidth = charWidth * CGFloat(maxLineLength)
 
+            // Set maximum width - text wraps naturally within this limit
             textContainer.containerSize = NSSize(
                 width: maxWidth,
                 height: CGFloat.greatestFiniteMagnitude
             )
+
+            // Don't track text view size - use our fixed maximum
             textContainer.widthTracksTextView = false
             textContainer.heightTracksTextView = false
         }
@@ -67,11 +62,17 @@ struct PlainTextEditor: NSViewRepresentable {
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
-        let textView = scrollView.documentView as! NSTextView
+        guard let textView = scrollView.documentView as? NSTextView else { return }
 
-        // Only update if text actually changed to avoid cursor jumping
+        // Only update if text actually changed (avoid cursor jumping)
         if textView.string != text {
+            let selectedRange = textView.selectedRange()
             textView.string = text
+
+            // Restore cursor position if valid
+            if selectedRange.location <= text.count {
+                textView.setSelectedRange(selectedRange)
+            }
         }
 
         // Update text container width based on availableWidth or scroll view size
@@ -80,7 +81,7 @@ struct PlainTextEditor: NSViewRepresentable {
             let maxWidth = charWidth * CGFloat(maxLineLength)
 
             // Use availableWidth if provided (from GeometryReader), otherwise fall back to contentSize
-            let currentWidth = availableWidth > 0 ? availableWidth - 24 : scrollView.contentSize.width - 24  // Account for insets (12 * 2)
+            let currentWidth = availableWidth > 0 ? availableWidth - 16 : scrollView.contentSize.width - 16
 
             // Use whichever is smaller: available width or maximum width
             let containerWidth = min(currentWidth, maxWidth)
@@ -97,9 +98,9 @@ struct PlainTextEditor: NSViewRepresentable {
     }
 
     class Coordinator: NSObject, NSTextViewDelegate {
-        var parent: PlainTextEditor
+        var parent: SmartTextEditor
 
-        init(_ parent: PlainTextEditor) {
+        init(_ parent: SmartTextEditor) {
             self.parent = parent
         }
 
@@ -110,32 +111,23 @@ struct PlainTextEditor: NSViewRepresentable {
     }
 }
 
-// MARK: - Custom Font Support
-extension PlainTextEditor {
-    func font(_ font: NSFont) -> PlainTextEditor {
-        var editor = self
-        editor.font = font
-        return editor
-    }
-}
-
 // MARK: - Resize-Aware Wrapper
 
-/// Wrapper that makes PlainTextEditor responsive to window resizing
-struct ResizablePlainTextEditor: View {
+/// Wrapper that makes SmartTextEditor responsive to window resizing
+struct ResizableSmartTextEditor: View {
     @Binding var text: String
-    var font: NSFont = .monospacedSystemFont(ofSize: 13, weight: .regular)
     var maxLineLength: Int = 120
+    var font: NSFont = .monospacedSystemFont(ofSize: 13, weight: .regular)
 
     @State private var debouncedWidth: CGFloat = 0
     @State private var resizeTask: Task<Void, Never>?
 
     var body: some View {
         GeometryReader { geometry in
-            PlainTextEditor(
+            SmartTextEditor(
                 text: $text,
-                font: font,
                 maxLineLength: maxLineLength,
+                font: font,
                 availableWidth: debouncedWidth > 0 ? debouncedWidth : geometry.size.width
             )
             .onChange(of: geometry.size.width) { _, newWidth in
@@ -157,4 +149,25 @@ struct ResizablePlainTextEditor: View {
             }
         }
     }
+}
+
+// MARK: - Preview
+
+#Preview {
+    VStack {
+        Text("Should wrap at 120 characters:")
+        SmartTextEditor(
+            text: .constant(
+                "This is a very long line that demonstrates wrapping behavior. " +
+                String(repeating: "Lorem ipsum dolor sit amet. ", count: 5)
+            ),
+            maxLineLength: 120
+        )
+        .frame(height: 200)
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+        )
+    }
+    .padding()
 }

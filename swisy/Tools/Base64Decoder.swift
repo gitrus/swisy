@@ -128,23 +128,23 @@ struct Base64DecoderView: View {
                 HStack {
                     Text(inputLabel)
                         .font(.headline)
+
                     Spacer()
+
+                    CharacterCountView(text: state.currentInput)
+
                     Button(action: pasteFromClipboard) {
                         Label("Paste", systemImage: "doc.on.clipboard")
                     }
                     .keyboardShortcut("v", modifiers: [.command, .shift])
                 }
 
-                TextEditor(text: currentInputBinding)
-                    .font(.system(.body, design: .monospaced))
+                ResizableSmartTextEditor(text: currentInputBinding, maxLineLength: 120)
                     .frame(height: 150)
-                    .scrollContentBackground(.hidden)
-                    .background(Color(nsColor: .textBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
                             .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                     )
-                    .focused($inputFocused)
                     .onChange(of: state.encodeInput) { _, _ in transformCurrentInput() }
                     .onChange(of: state.decodeInput) { _, _ in transformCurrentInput() }
             }
@@ -157,8 +157,12 @@ struct Base64DecoderView: View {
                 HStack {
                     Text(outputLabel)
                         .font(.headline)
+
                     Spacer()
+
                     if !output.isEmpty {
+                        CharacterCountView(text: output)
+
                         Button(action: copyToClipboard) {
                             Label("Copy", systemImage: "doc.on.doc")
                         }
