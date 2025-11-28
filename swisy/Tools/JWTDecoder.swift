@@ -289,6 +289,7 @@ struct DecodedTextSection: View {
     }
 }
 
+@MainActor
 @ViewBuilder
 private func sectionHeader(
     title: String,
