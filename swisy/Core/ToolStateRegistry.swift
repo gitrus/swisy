@@ -106,6 +106,10 @@ extension ToolStateRegistry {
         state(for: "json-formatter") { JSONToolState() }
     }
 
+    var jsonDiff: JSONDiffToolState {
+        state(for: "json-diff") { JSONDiffToolState() }
+    }
+
     var textDiff: TextDiffToolState {
         state(for: "text-diff") { TextDiffToolState() }
     }

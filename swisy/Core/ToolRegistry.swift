@@ -45,6 +45,7 @@ final class ToolRegistry {
         JWTDecoderTool(),
         Base64DecoderTool(),
         JSONFormatterTool(),
+        JSONDiffTool(),
         TextDiffTool()
     ]
 
