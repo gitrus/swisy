@@ -66,12 +66,19 @@ private extension String {
 // MARK: - Minimal JSON Parser
 
 private enum JSONParser {
-    static func parse(_ s: String) -> JSONValue? {
+    /// Returns (value, errorPosition). errorPosition is -1 on success.
+    static func parse(_ s: String) -> (JSONValue?, Int) {
         var i = s.startIndex
         skipWS(s, &i)
-        guard let v = parseValue(s, &i) else { return nil }
+        guard let v = parseValue(s, &i) else {
+            return (nil, s.distance(from: s.startIndex, to: i))
+        }
         skipWS(s, &i)
-        return i == s.endIndex ? v : nil
+        if i == s.endIndex {
+            return (v, -1)
+        } else {
+            return (nil, s.distance(from: s.startIndex, to: i))
+        }
     }
 
     private static func skipWS(_ s: String, _ i: inout String.Index) {
@@ -201,20 +208,26 @@ private enum JSONParser {
 // MARK: - JSON Diff Logic
 
 private enum JSONDiff {
-    static func format(_ input: String) -> String? {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        return JSONParser.parse(trimmed)?.format()
-    }
+    /// Returns (lines, stats, errorMessage). errorMessage is nil on success.
+    static func compute(left: String, right: String) -> (lines: [DiffLine], stats: DiffStats, error: String?) {
+        let l = left.trimmingCharacters(in: .whitespacesAndNewlines)
+        let r = right.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    static func compute(left: String, right: String) -> (lines: [DiffLine], stats: DiffStats)? {
-        let l = left.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "{}" : left
-        let r = right.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "{}" : right
+        let (lv, lErr) = JSONParser.parse(l.isEmpty ? "{}" : l)
+        let (rv, rErr) = JSONParser.parse(r.isEmpty ? "{}" : r)
 
-        guard let lf = format(l), let rf = format(r) else { return nil }
+        let emptyStats = DiffStats(additions: 0, deletions: 0, modifications: 0, unchanged: 0)
 
-        let lines = TextDiffer.diff(left: lf, right: rf)
-        return (lines, TextDiffer.computeStats(from: lines))
+        // Show first error found (left takes priority)
+        if lv == nil {
+            return ([], emptyStats, "Left JSON: error at position \(lErr)")
+        }
+        if rv == nil {
+            return ([], emptyStats, "Right JSON: error at position \(rErr)")
+        }
+
+        let lines = TextDiffer.diff(left: lv!.format(), right: rv!.format())
+        return (lines, TextDiffer.computeStats(from: lines), nil)
     }
 }
 
@@ -224,7 +237,7 @@ struct JSONDiffView: View {
     @ObservedObject private var state = ToolStateRegistry.shared.jsonDiff
     @State private var diffLines: [DiffLine] = []
     @State private var stats: DiffStats?
-    @State private var hasError = false
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -294,8 +307,8 @@ struct JSONDiffView: View {
             Group {
                 if state.leftJSON.isEmpty && state.rightJSON.isEmpty {
                     placeholder(icon: "curlybraces.square", title: "Compare JSONs", desc: "Paste JSON in both panels")
-                } else if hasError {
-                    placeholder(icon: "exclamationmark.triangle", title: "Invalid JSON", desc: "Check your JSON syntax")
+                } else if let error = errorMessage {
+                    placeholder(icon: "exclamationmark.triangle", title: "Invalid JSON", desc: error)
                 } else if stats == nil {
                     VStack { ProgressView().padding(.top, 40); Spacer() }
                 } else if !stats!.hasChanges {
@@ -335,15 +348,16 @@ struct JSONDiffView: View {
     }
 
     private func computeDiff() {
-        hasError = false; diffLines = []; stats = nil
+        errorMessage = nil; diffLines = []; stats = nil
         guard !state.leftJSON.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
               !state.rightJSON.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
-        if let result = JSONDiff.compute(left: state.leftJSON, right: state.rightJSON) {
+        let result = JSONDiff.compute(left: state.leftJSON, right: state.rightJSON)
+        if let error = result.error {
+            errorMessage = error
+        } else {
             diffLines = result.lines
             stats = result.stats
-        } else {
-            hasError = true
         }
     }
 
