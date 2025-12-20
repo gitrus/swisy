@@ -22,9 +22,20 @@ Build by claude code with human assistance.
 - **Pure functions first** - Transform data, don't manage state
 - **Native macOS** - Respect platform conventions
 
+## Install
+
+Download latest from [Releases](../../releases/latest), unzip, then:
+
+```bash
+xattr -cr Swisy.app   # remove quarantine (unsigned app)
+open Swisy.app
+```
+
 ## Requirements
 
-- macOS 13.0+
+- macOS 14.0+
+
+## Dev requirements
 - Swift 6.2+
 
 ## Keywords
