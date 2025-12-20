@@ -1,11 +1,10 @@
-# This workflow will build a Swift project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-swift
-
+# Build and release Swisy macOS app
 name: Swift
 
 on:
   push:
     branches: ["main"]
+    tags: ["*"]
   pull_request:
     branches: ["main"]
 
@@ -15,8 +14,34 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Build
-        run: swift build -v
-    # Tests will be added in the future
-    # - name: Run tests
-    #   run: swift test -v
+        run: swift build -c release
+
+      - name: Create app bundle
+        run: |
+          mkdir -p Swisy.app/Contents/MacOS
+          mkdir -p Swisy.app/Contents/Resources
+          cp .build/release/swisy Swisy.app/Contents/MacOS/Swisy
+          cp swisy/Resources/AppIcon.icns Swisy.app/Contents/Resources/AppIcon.icns
+          cp Info.plist Swisy.app/Contents/Info.plist
+
+      - name: Create ZIP
+        if: startsWith(github.ref, 'refs/tags/')
+        run: zip -r Swisy-${{ github.ref_name }}-macos.zip Swisy.app
+
+      - name: Upload artifact
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: Swisy-${{ github.ref_name }}
+          path: Swisy-${{ github.ref_name }}-macos.zip
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Swisy-${{ github.ref_name }}-macos.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
