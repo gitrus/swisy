@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 900 900">
+    <defs>
+        <!-- Pink handle -->
+        <linearGradient id="pinkHandle" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#A15D6A"/>
+        <stop offset="1" stop-color="#E5949A"/>
+        </linearGradient>
+
+        <!-- Pink block -->
+        <linearGradient id="pinkBlock" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#DF8693"/>
+        <stop offset="1" stop-color="#B86575"/>
+        </linearGradient>
+
+        <!-- Teal handle -->
+        <linearGradient id="tealHandle" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3E9E9E"/>
+        <stop offset="1" stop-color="#6ECBC6"/>
+        </linearGradient>
+
+        <!-- Teal block -->
+        <linearGradient id="tealBlock" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#73D3CE"/>
+        <stop offset="1" stop-color="#359593"/>
+        </linearGradient>
+    </defs>
+
+
+    <!-- Left (pink) handle -->
+    <path
+    d="
+        M 260 40
+        H 330
+        Q 360 40 359.23 69.99
+        L 340.77 790.01
+        Q 340 820 310 820
+        H 280
+        Q 250 820 249.23 790.01
+        L 230.77 69.99
+        Q 230 40 260 40
+        Z
+    "
+        fill="url(#pinkHandle)" />
+    <rect x="234" y="140" width="122" height="40"
+        fill="#DD8594"/>
+    <rect x="236" y="210" width="118" height="20"
+        fill="#DD8594"/>
+
+    <!-- Left (pink) block -->
+    <rect x="40" y="540" width="500" height="253" rx="70" ry="70"
+        fill="url(#pinkBlock)"/>
+
+    <rect x="105" y="540" width="370" height="250"
+        fill="#DD8594"/>
+
+    <!-- Right (teal) handle -->
+    <path
+        d="
+            M 685 140
+            L 735 140
+            Q 755 140 754.48 159.99
+            L 740.52 695.01
+            Q 740 715 720 715
+            L 700 715
+            Q 680 715 679.48 695.01
+            L 665.52 159.99
+            Q 665 140 685 140
+            Z
+        "
+        fill="url(#tealHandle)"/>
+    <rect x="669" y="220" width="82" height="27"
+        fill="#66C6C2"/>
+    <rect x="671" y="265" width="79" height="15"
+        fill="#66C6C2"/>
+
+    <!-- Right (teal) block -->
+    <rect x="560" y="510" width="300" height="182" rx="50" ry="50"
+        fill="url(#tealBlock)"/>
+    <rect x="605" y="510" width="210" height="180"
+        fill="#66C6C2"/>
+</svg>
