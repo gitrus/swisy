@@ -238,6 +238,9 @@ struct JSONDiffView: View {
     @State private var diffLines: [DiffLine] = []
     @State private var stats: DiffStats?
     @State private var errorMessage: String?
+    @State private var hunkIndices: [Int] = []
+    @State private var currentHunkIndex: Int = -1
+    @State private var scrollTarget: ScrollTarget?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -298,6 +301,9 @@ struct JSONDiffView: View {
                 Text("Diff (keys sorted)").font(.subheadline).foregroundStyle(.secondary)
                 Spacer()
                 if let stats, stats.hasChanges {
+                    DiffNavigationBar(currentIndex: currentHunkIndex, totalCount: hunkIndices.count,
+                                       onPrevious: { navigateHunk(-1) }, onNext: { navigateHunk(1) })
+                    Divider().frame(height: 16)
                     Button(action: copyUnifiedDiff) { Label("Copy", systemImage: "doc.on.doc") }.buttonStyle(.borderless)
                 }
             }
@@ -314,7 +320,7 @@ struct JSONDiffView: View {
                 } else if !stats!.hasChanges {
                     placeholder(icon: "checkmark.circle", title: "Identical", desc: "No differences found")
                 } else {
-                    DiffTableView(lines: diffLines)
+                    DiffTableView(lines: diffLines, scrollTarget: scrollTarget)
                         .clipShape(RoundedRectangle(cornerRadius: 6))
                         .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(nsColor: .separatorColor), lineWidth: 1))
                         .padding(.horizontal)
@@ -349,6 +355,7 @@ struct JSONDiffView: View {
 
     private func computeDiff() {
         errorMessage = nil; diffLines = []; stats = nil
+        hunkIndices = []; currentHunkIndex = -1; scrollTarget = nil
         guard !state.leftJSON.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
               !state.rightJSON.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
@@ -358,7 +365,15 @@ struct JSONDiffView: View {
         } else {
             diffLines = result.lines
             stats = result.stats
+            hunkIndices = DiffHunks.hunkStartIndices(from: diffLines)
         }
+    }
+
+    private func navigateHunk(_ direction: Int) {
+        let next = currentHunkIndex + direction
+        guard next >= 0, next < hunkIndices.count else { return }
+        currentHunkIndex = next
+        scrollTarget = ScrollTarget(row: hunkIndices[next])
     }
 
     private func copyUnifiedDiff() {

@@ -189,10 +189,34 @@ enum TextDiffer {
     }
 }
 
-// MARK: - Diff Table View
+// MARK: - Scroll Target
+
+struct ScrollTarget: Identifiable {
+    let row: Int
+    let id = UUID()
+}
+
+// MARK: - Hunk Helpers
+
+enum DiffHunks {
+    /// Returns the starting row index of each contiguous group of changed lines.
+    static func hunkStartIndices(from lines: [DiffLine]) -> [Int] {
+        var indices: [Int] = []
+        var inHunk = false
+        for (i, line) in lines.enumerated() {
+            if line.type != .unchanged {
+                if !inHunk { indices.append(i); inHunk = true }
+            } else {
+                inHunk = false
+            }
+        }
+        return indices
+    }
+}
 
 struct DiffTableView: NSViewRepresentable {
     let lines: [DiffLine]
+    var scrollTarget: ScrollTarget?
 
     private let lineNumberColumnWidth: CGFloat = 70
     private let minContentColumnWidth: CGFloat = 200
@@ -301,7 +325,14 @@ struct DiffTableView: NSViewRepresentable {
         context.coordinator.leftTable?.reloadData()
         context.coordinator.centerTable?.reloadData()
         context.coordinator.rightTable?.reloadData()
-        DispatchQueue.main.async { context.coordinator.updateColumnWidths() }
+        DispatchQueue.main.async {
+            context.coordinator.updateColumnWidths()
+            if let target = self.scrollTarget,
+               target.id != context.coordinator.lastAppliedScrollID {
+                context.coordinator.lastAppliedScrollID = target.id
+                context.coordinator.scrollToRow(target.row)
+            }
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(lines: lines) }
@@ -316,11 +347,19 @@ struct DiffTableView: NSViewRepresentable {
         weak var centerScrollView: NSScrollView?
         weak var rightScrollView: NSScrollView?
 
+        var lastAppliedScrollID: UUID?
         private var isSyncing = false
         private let font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
 
         init(lines: [DiffLine]) { self.lines = lines }
         deinit { NotificationCenter.default.removeObserver(self) }
+
+        func scrollToRow(_ row: Int) {
+            guard let table = rightTable, row >= 0, row < lines.count else { return }
+            let contextRow = max(0, row - 3)
+            let rowRect = table.rect(ofRow: contextRow)
+            rightScrollView?.contentView.setBoundsOrigin(NSPoint(x: 0, y: rowRect.origin.y))
+        }
 
         func setupScrollSync() {
             guard let leftClip = leftScrollView?.contentView,
